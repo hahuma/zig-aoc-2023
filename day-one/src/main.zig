@@ -15,6 +15,8 @@ fn handleFirstQuestion(file_path: []const u8) !void {
     var line_buffer = std.ArrayList(u8).init(allocator);
     defer line_buffer.deinit();
 
+    var total_result: i32 = 0;
+
     while (true) {
         line_buffer.clearAndFree();
 
@@ -28,21 +30,34 @@ fn handleFirstQuestion(file_path: []const u8) !void {
         var numbers = std.ArrayList(u8).init(allocator);
         defer numbers.deinit();
 
+        var first_digit = std.ArrayList(u8).init(allocator);
+        defer first_digit.deinit();
+
+        var last_digit = std.ArrayList(u8).init(allocator);
+        defer last_digit.deinit();
+
         for (line) |char| {
             if (std.ascii.isDigit(char)) {
-                try numbers.append(char);
+                if (first_digit.items.len == 0) {
+                    try first_digit.append(char);
+                }
+
+                if (last_digit.items.len > 0) {
+                    last_digit.clearAndFree();
+                }
+
+                try last_digit.append(char);
             }
         }
 
-        if (numbers.items.len > 0) {
-            var numberStringBuffer: [256]u8 = undefined;
-            std.mem.copy(u8, numberStringBuffer[0..], numbers.items);
-            const numberString = numberStringBuffer[0..numbers.items.len];
+        try first_digit.appendSlice(last_digit.items);
 
-            const number = try parseInt(i32, numberString, 10);
-            try stdout.print("Números encontrados: {d}\n", .{number});
-        }
+        total_result += parseInt(i32, first_digit.items, 10) catch |err| switch (err) {
+            else => 0,
+        };
     }
+
+    try stdout.print("Result: {d}\n", .{total_result});
 }
 
 pub fn main() !void {
